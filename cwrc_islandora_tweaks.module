@@ -1,0 +1,29 @@
+<?php
+/**
+ * @file
+ * Hooks and helper functions for the CWRC Islandora Tweaks module.
+ */
+
+/* Hooks. */
+/**
+ * Prepares variables for Islandora basic collection templates.
+ *
+ * Default template: islandora-basic-collection.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - islandora_object: A PHP object containing information about the Fedora
+ *     data object that is this collection.
+ *   - collection_results: An array of Fedora data object stubs that are in this
+ *     collection.
+ */
+function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables) {
+  // Loop through each object in the collection, find it's URL, and add a Read
+  // More link.
+  $results = $variables['collection_results'];
+  foreach ($results as $result) {
+    $pid = $result['object']['value'];
+    $object_url = 'islandora/object/' . $pid;
+    $variables['associated_objects_array'][$pid]['read_more'] = l(t('Read more'), $object_url);
+  }
+}
