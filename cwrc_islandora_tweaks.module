@@ -27,3 +27,19 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
     $variables['associated_objects_array'][$pid]['read_more'] = l(t('Read more'), $object_url);
   }
 }
+
+/**
+ * Prepares variables for Islandora basic collection templates, grid view.
+ *
+ * Default template: islandora-basic-collection-grid.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - islandora_object: A PHP object containing information about the Fedora
+ *     data object that is this collection.
+ *   - collection_results: An array of Fedora data object stubs that are in this
+ *     collection.
+ */
+function cwrc_islandora_tweaks_preprocess_islandora_basic_collection_grid(&$variables) {
+  cwrc_islandora_tweaks_preprocess_islandora_basic_collection($variables);
+}
