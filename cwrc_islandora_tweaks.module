@@ -4,7 +4,16 @@
  * Hooks and helper functions for the CWRC Islandora Tweaks module.
  */
 
+/**
+ * The query fragment used to change how a basic collection is sorted.
+ *
+ * Extracting this to a constant makes changing the sorting query fragment
+ * relatively easy if we discover that it collides with something else.
+ */
+define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
+
 /* Hooks. */
+
 /**
  * Prepares variables for Islandora basic collection templates.
  *
@@ -26,6 +35,35 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
     $object_url = 'islandora/object/' . $pid;
     $variables['associated_objects_array'][$pid]['read_more'] = l(t('Read more'), $object_url);
   }
+
+  // Add order-by links. We have to urldecode() the request URI and parse the
+  // decoded string because PHP will consider something like
+  // 'islandora/object/islandora%3Aroot%3Fdisplay%3Dlist' a path and Drupal will
+  // happily output an invalid link to
+  // 'islandora/object/islandora%3Aroot%3Fdisplay%3Dlist?sort=title', i.e.:
+  // 'islandora/object/islandora:root?display=list?sort=title' which results in
+  // a 404.
+  $current_uri = urldecode(request_uri());
+  $current_uri_path = _cwrc_islandora_tweaks_parse_path($current_uri);
+  $current_uri_query = _cwrc_islandora_tweaks_parse_query($current_uri);
+  $variables['order_by'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Sort'),
+  );
+  $variables['order_by']['sort_options'] = array(
+    '#markup' => theme('item_list', array(
+      'type' => 'ul',
+      'items' => array(
+        // Note the order of `array('sort' => 'title') + $current_uri_query` is
+        // important because the keys from the array on the left will take
+        // precedence over the keys from the array on the right. That is to say,
+        // the keys in the array on the right will be stomped if they are the
+        // same as the keys on the left.
+        l(t('Title'), $current_uri_path, array('query' => array(CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT => 'title') + $current_uri_query)),
+        l(t('Modified'), $current_uri_path, array('query' => array(CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT => 'date_modified') + $current_uri_query)),
+      ),
+    )),
+  );
 }
 
 /**
@@ -42,4 +80,87 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
  */
 function cwrc_islandora_tweaks_preprocess_islandora_basic_collection_grid(&$variables) {
   cwrc_islandora_tweaks_preprocess_islandora_basic_collection($variables);
+}
+
+/**
+ * Implements hook_islandora_basic_collection_query_param_alter().
+ */
+function cwrc_islandora_tweaks_islandora_basic_collection_query_param_alter(&$query_filters, &$query_statements, &$params, &$query_optionals) {
+  // Parse the URL to see if there is a sort parameter. Default to sorting by
+  // title if the value of the parameter is not something else we recognize.
+  if (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT])) {
+    if ($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] === 'date_modified') {
+      $params['order_by'] = '?date_modified';
+    }
+    else {
+      $params['order_by'] = '?title';
+    }
+  }
+}
+
+/* Helper functions. */
+
+/**
+ * Gets a path out of a URL.
+ *
+ * Essentially a wrapper around parse_url() with a Drupal-specific failure
+ * state.
+ *
+ * @param string $uri
+ *   The URL to parse.
+ *
+ * @return string
+ *   The path from the URL, or '<front>' if the URL was too mangled to parse.
+ */
+function _cwrc_islandora_tweaks_parse_path($uri) {
+  $parsed_uri = parse_url($uri);
+
+  // If the URL was so badly mangled that PHP couldn't parse it, or we couldn't
+  // find the path fragement, return the URL to the homepage of the site.
+  if ($parsed_uri === FALSE || !isset($parsed_uri['path'])) {
+    return '<front>';
+  }
+
+  return ltrim($parsed_uri['path'], '/');
+}
+
+/**
+ * Get an array of query parameters out of a URL.
+ *
+ * Essentially a wrapper around parse_url() with some extra functionality to
+ * put the query parameters into an array.
+ *
+ * @param string $uri
+ *   The URL to parse.
+ *
+ * @return array
+ *   An array of query parameters from the URL, or an empty array the URL was
+ *   too mangled to parse or query parameters could not be found in a parsable
+ *   URL.
+ */
+function _cwrc_islandora_tweaks_parse_query($uri) {
+  $answer = array();
+  $parsed_uri = parse_url($uri);
+
+  // If the URL was so badly mangled that PHP couldn't parse it, or we couldn't
+  // find the query fragement, return an empty array of query parameters.
+  if ($parsed_uri === FALSE || !isset($parsed_uri['query'])) {
+    return array();
+  }
+
+  // Technically, according to RFC 1866, the semicolon (;) is a valid way to
+  // separate parameters, but it's not widely used in Drupal, so we'll ignore
+  // it for simplicity's sake.
+  $query_variables = explode('&', $parsed_uri['query']);
+
+  // Reconstruct an array of query parameters by deconstructing the string we
+  // got back from parse_url().
+  foreach ($query_variables as $variable) {
+    $var_parts = explode('=', $variable, 2);
+    $key = $var_parts[0];
+    $value = $var_parts[1];
+    $answer[$key] = $value;
+  }
+
+  return $answer;
 }
