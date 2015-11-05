@@ -3,4 +3,4 @@ description = Islandora business logic specific to the CWRC site.
 core        = 7.x
 package     = CWRC
 
-dependencies[] = islandora (>=7.x-1.5)
+dependencies[] = islandora (>=7.x-1.x)
