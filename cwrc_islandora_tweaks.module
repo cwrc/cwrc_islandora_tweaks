@@ -50,20 +50,39 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
     '#type' => 'fieldset',
     '#title' => t('Sort'),
   );
-  $variables['order_by']['sort_options'] = array(
-    '#markup' => theme('item_list', array(
-      'type' => 'ul',
-      'items' => array(
-        // Note the order of `array('sort' => 'title') + $current_uri_query` is
-        // important because the keys from the array on the left will take
-        // precedence over the keys from the array on the right. That is to say,
-        // the keys in the array on the right will be stomped if they are the
-        // same as the keys on the left.
-        l(t('Title'), $current_uri_path, array('query' => array(CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT => 'title') + $current_uri_query)),
-        l(t('Modified'), $current_uri_path, array('query' => array(CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT => 'date_modified') + $current_uri_query)),
+  $variables['order_by']['sort_options'] = drupal_get_form('cwrc_islandora_tweaks_sort_form');
+}
+
+/**
+ * Form builder function for sort order form on basic collections.
+ */
+function cwrc_islandora_tweaks_sort_form($form, &$form_state) {
+  return array(
+    'sort' => array(
+      '#type' => 'select',
+      '#title' => t('Sort by'),
+      '#options' => array(
+        'title' => t('Title'),
+        'date_modified' => t('Modified'),
       ),
-    )),
+      '#default_value' => (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT]) ? $_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] : 'title'),
+    ),
+    'submit' => array(
+      '#type' => 'submit',
+      '#value' => t('Change'),
+    ),
   );
+}
+
+/**
+ * Submit handler for sort order forms, simply performs a redirect to the same
+ * page with the appropriate sort parameter.
+ */
+function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
+  $path = current_path();
+  $query = drupal_get_query_parameters();
+  $query['sort'] = $form_state['values']['sort'];
+  drupal_goto($path, array('query' => $query));
 }
 
 /**
