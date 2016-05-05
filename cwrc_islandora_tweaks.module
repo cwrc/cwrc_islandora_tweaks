@@ -183,3 +183,36 @@ function _cwrc_islandora_tweaks_parse_query($uri) {
 
   return $answer;
 }
+
+/**
+ * Implements hook_page_alter().
+ */
+function cwrc_islandora_tweaks_page_alter(&$page) {
+  $object = menu_get_object('islandora_object', 2);
+  if (!$object) {
+    return;
+  }
+
+  if (arg(3) != "manage") return;
+
+  if (!islandora_object_lock_is_locked($object)) return;
+
+  module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
+
+  $msg = islandora_object_lock_get_locked_message($object);
+
+  if (!_cwrc_islandora_tweaks_message_exists($msg)) {
+    drupal_set_message($msg, 'warning', FALSE);
+  }
+
+}
+
+function _cwrc_islandora_tweaks_message_exists($msg) {
+  $messages = drupal_get_messages(NULL, FALSE);
+  foreach ($messages as $type => $msgs) {
+    if (in_array($msg, $msgs)) {
+      return true;
+    }
+  }
+  return false;
+}
