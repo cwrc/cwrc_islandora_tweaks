@@ -195,9 +195,8 @@ function cwrc_islandora_tweaks_page_alter(&$page) {
 
   if (arg(3) != "manage") return;
 
-  if (!islandora_object_lock_is_locked($object)) return;
-
   module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
+  if (!islandora_object_lock_is_locked($object)) return;
 
   $msg = islandora_object_lock_get_locked_message($object);
 
