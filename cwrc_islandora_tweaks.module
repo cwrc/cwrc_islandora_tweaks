@@ -53,6 +53,13 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
   $variables['order_by']['sort_options'] = drupal_get_form('cwrc_islandora_tweaks_sort_form');
 }
 
+function cwrc_islandora_tweaks_preprocess_html(&$variables) {
+  $menu_item = menu_get_item();
+  if ($menu_item['path'] == 'islandora/object/%/print') {
+    $variables['classes_array'][] = 'islandora-print';
+  }
+}
+
 /**
  * Form builder function for sort order form on basic collections.
  */
