@@ -30,11 +30,38 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
   // Loop through each object in the collection, find it's URL, and add a Read
   // More link.
   $results = $variables['collection_results'];
-  foreach ($results as $result) {
-    $pid = $result['object']['value'];
-    $object_url = 'islandora/object/' . $pid;
-    $variables['associated_objects_array'][$pid]['read_more'] = l(t('Read more'), $object_url);
+  $display = (empty($_GET['display'])) ? variable_get('islandora_basic_collection_default_view', 'grid') : $_GET['display'];
+  $build = array(
+    '#theme' => 'item_list',
+    '#type' => 'ul',
+    '#items' => array(),
+    '#attributes' => array(),
+  );
+
+  // Use default grid layout.
+  if ($display == 'grid') {
+    $build['#attributes']['class'][] = 'grid-layout';
+    foreach ($results as $result) {
+      $content = array(
+        '#theme' => 'cwrc_search_teaser_grid',
+        '#object' => $result['object']['value'],
+      );
+      $build['#items'][] = render($content);
+    }
+
+  // Use default list layout.
+  } else {
+    $build['#attributes']['class'][] = 'list-layout';
+    foreach ($results as $result) {
+      $content = array(
+        '#theme' => 'cwrc_search_teaser_list',
+        '#object' => $result['object']['value'],
+      );
+      $build['#items'][] = render($content);
+    }
   }
+
+  $variables['collection_results'] = $build;
 
   // Add order-by links. We have to urldecode() the request URI and parse the
   // decoded string because PHP will consider something like
