@@ -249,3 +249,91 @@ function _cwrc_islandora_tweaks_message_exists($msg) {
   }
   return false;
 }
+
+/**
+ * Blocks default TN datastreams for various cmodels when they are ingested.
+ */
+function cwrc_islandora_tweaks_islandora_object_ingested(AbstractObject $object) {
+  static $cmodels = array(
+    'islandora:sp-audioCModel',
+    'islandora:collectionCModel',
+  );
+
+  // This hook is probably fired twice, try not to do too much work.
+  if (in_array(_cwrc_islandora_tweaks_extract_cmodel($object->models), $cmodels)
+    && isset($object['TN'])) {
+
+    // Check the defaults for specified cmodels.
+    switch (_cwrc_islandora_tweaks_extract_cmodel($object->models)) {
+      case 'islandora:sp-audioCModel':
+        $default_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_audio') . '/images/audio-TN.jpg';
+        break;
+      case 'islandora:collectionCModel':
+        $default_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_basic_collection') . '/images/folder.png';
+        break;
+    }
+
+    // Hash the default and the ingested thumbnail.
+    $default = md5_file($default_path);
+    $thumbnail = md5($object['TN']->content);
+
+    // This is the default.
+    if ($default == $thumbnail) {
+      $object->purgeDatastream('TN');
+    }
+  }
+}
+
+/**
+ * The cmodel-specific implementations are fired last, so we need to implement
+ * the same hook to block the default TN datastream here.
+ */
+function cwrc_islandora_tweaks_islandora_collectioncmodel_islandora_object_ingested(AbstractObject $object) {
+  cwrc_islandora_tweaks_islandora_object_ingested($object);
+}
+
+/**
+ * The cmodel-specific implementations are fired last, so we need to implement
+ * the same hook to block the default TN datastream here.
+ */
+function cwrc_islandora_tweaks_islandora_sp_audiocmodel_islandora_object_ingested(AbstractObject $object) {
+  cwrc_islandora_tweaks_islandora_object_ingested($object);
+}
+
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Moves our implementations to the end of the run-list.
+ */
+function cwrc_islandora_tweaks_module_implements_alter(&$implementations, $hook) {
+  static $hooks = array(
+    'islandora_collectionCModel_islandora_object_ingested',
+    'islandora_ap_audioCModel_islandora_object_ingested',
+  );
+  if (in_array($hook, $hooks)) {
+    $group = $implementations['cwrc_islandora_tweaks'];
+    unset($implementations['cwrc_islandora_tweaks']);
+    $implementations['cwrc_islandora_tweaks'] = $group;
+  }
+}
+
+/**
+ * Helper function that extracts a single valid cmodel from a passed array.
+ *
+ * Primarily used to filter out `fedora-system` namespace cmodels (because we
+ * just don't care about those ones).
+ * @param  array $models An array of cmodel PIDs.
+ * @return A single cmodel PID.
+ */
+function _cwrc_islandora_tweaks_extract_cmodel($models) {
+  foreach ($models as $key => $value) {
+    if (substr($value, 0, 13) == 'fedora-system') {
+      unset($models[$key]);
+    }
+  }
+
+  // This definitely isn't bullet-proof.
+  $return = reset($models);
+  return $return;
+}
