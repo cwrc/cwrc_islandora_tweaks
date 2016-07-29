@@ -222,6 +222,8 @@ function _cwrc_islandora_tweaks_parse_query($uri) {
  * Implements hook_page_alter().
  */
 function cwrc_islandora_tweaks_page_alter(&$page) {
+  module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
+
   $object = menu_get_object('islandora_object', 2);
   if (!$object) {
     return;
@@ -229,7 +231,6 @@ function cwrc_islandora_tweaks_page_alter(&$page) {
 
   if (arg(3) != "manage") return;
 
-  module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
   if (!islandora_object_lock_is_locked($object)) return;
 
   $msg = islandora_object_lock_get_locked_message($object);
