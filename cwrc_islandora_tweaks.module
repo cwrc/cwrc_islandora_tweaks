@@ -183,16 +183,6 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
 
   $variables['collection_results'] = $build;
 
-  // Add order-by links. We have to urldecode() the request URI and parse the
-  // decoded string because PHP will consider something like
-  // 'islandora/object/islandora%3Aroot%3Fdisplay%3Dlist' a path and Drupal will
-  // happily output an invalid link to
-  // 'islandora/object/islandora%3Aroot%3Fdisplay%3Dlist?sort=title', i.e.:
-  // 'islandora/object/islandora:root?display=list?sort=title' which results in
-  // a 404.
-  $current_uri = urldecode(request_uri());
-  $current_uri_path = _cwrc_islandora_tweaks_parse_path($current_uri);
-  $current_uri_query = _cwrc_islandora_tweaks_parse_query($current_uri);
   $variables['order_by'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sort'),
@@ -310,7 +300,7 @@ function _cwrc_islandora_tweaks_parse_query($uri) {
  */
 function _cwrc_islandora_tweaks_message_exists($msg) {
   $messages = drupal_get_messages(NULL, FALSE);
-  foreach ($messages as $type => $msgs) {
+  foreach ($messages as $msgs) {
     if (in_array($msg, $msgs)) {
       return TRUE;
     }
