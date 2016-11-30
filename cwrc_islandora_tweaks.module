@@ -1,8 +1,11 @@
 <?php
+
 /**
  * @file
  * Hooks and helper functions for the CWRC Islandora Tweaks module.
  */
+
+/* Constants. */
 
 /**
  * The query fragment used to change how a basic collection is sorted.
@@ -13,6 +16,122 @@
 define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
 
 /* Hooks. */
+
+/**
+ * Implements hook_islandora_basic_collection_query_param_alter().
+ */
+function cwrc_islandora_tweaks_islandora_basic_collection_query_param_alter(&$query_filters, &$query_statements, &$params, &$query_optionals) {
+  // Parse the URL to see if there is a sort parameter. Default to sorting by
+  // title if the value of the parameter is not something else we recognize.
+  if (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT])) {
+    if ($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] === 'date_modified') {
+      $params['order_by'] = '?date_modified';
+    }
+    else {
+      $params['order_by'] = '?title';
+    }
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function cwrc_islandora_tweaks_module_implements_alter(&$implementations, $hook) {
+  // Moves our implementations to the end of the run-list.
+  static $hooks = array(
+    'islandora_collectionCModel_islandora_object_ingested',
+    'islandora_ap_audioCModel_islandora_object_ingested',
+  );
+  if (in_array($hook, $hooks)) {
+    $group = $implementations['cwrc_islandora_tweaks'];
+    unset($implementations['cwrc_islandora_tweaks']);
+    $implementations['cwrc_islandora_tweaks'] = $group;
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function cwrc_islandora_tweaks_page_alter(&$page) {
+  module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
+
+  $object = menu_get_object('islandora_object', 2);
+  if (!$object) {
+    return;
+  }
+
+  if (arg(3) != "manage") {
+    return;
+  }
+
+  if (!islandora_object_lock_is_locked($object)) {
+    return;
+  }
+
+  $msg = islandora_object_lock_get_locked_message($object);
+
+  if (!_cwrc_islandora_tweaks_message_exists($msg)) {
+    drupal_set_message($msg, 'warning', FALSE);
+  }
+
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_object_ingested().
+ */
+function cwrc_islandora_tweaks_islandora_collectioncmodel_islandora_object_ingested(AbstractObject $object) {
+  // The cmodel-specific implementations are fired last, so we need to implement
+  // the same hook to block the default TN datastream here.
+  cwrc_islandora_tweaks_islandora_object_ingested($object);
+}
+
+/**
+ * Implements hook_CMODEL_PID_islandora_object_ingested().
+ */
+function cwrc_islandora_tweaks_islandora_sp_audiocmodel_islandora_object_ingested(AbstractObject $object) {
+  // The cmodel-specific implementations are fired last, so we need to implement
+  // the same hook to block the default TN datastream here.
+  cwrc_islandora_tweaks_islandora_object_ingested($object);
+}
+
+/* Form handlers. */
+
+/**
+ * Form builder function for sort order form on basic collections.
+ *
+ * @see cwrc_islandora_tweaks_sort_form_submit()
+ */
+function cwrc_islandora_tweaks_sort_form($form, &$form_state) {
+  return array(
+    'sort' => array(
+      '#type' => 'select',
+      '#title' => t('Sort by'),
+      '#options' => array(
+        'title' => t('Title'),
+        'date_modified' => t('Modified'),
+      ),
+      '#default_value' => (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT]) ? $_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] : 'title'),
+    ),
+    'submit' => array(
+      '#type' => 'submit',
+      '#value' => t('Change'),
+    ),
+  );
+}
+
+/**
+ * Form submission handler for cwrc_islandora_tweaks_sort_form().
+ */
+function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
+  // Simply performs a redirect to the same page with the appropriate sort
+  // parameter. For use in sort order forms.
+  $path = current_path();
+  $query = drupal_get_query_parameters();
+  $query['sort'] = $form_state['values']['sort'];
+  drupal_goto($path, array('query' => $query));
+}
+
+/* Theme functions. */
 
 /**
  * Prepares variables for Islandora basic collection templates.
@@ -49,8 +168,9 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
       $build['#items'][] = render($content);
     }
 
-  // Use default list layout.
-  } else {
+    // Use default list layout.
+  }
+  else {
     $build['#attributes']['class'][] = 'list-layout';
     foreach ($results as $result) {
       $content = array(
@@ -80,43 +200,20 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
   $variables['order_by']['sort_options'] = drupal_get_form('cwrc_islandora_tweaks_sort_form');
 }
 
+/**
+ * Prepares variables for html templates.
+ *
+ * Default template: html.tpl.php.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - classes_array: An array of classes for the HTML page's body tag.
+ */
 function cwrc_islandora_tweaks_preprocess_html(&$variables) {
   $menu_item = menu_get_item();
   if ($menu_item['path'] == 'islandora/object/%/print') {
     $variables['classes_array'][] = 'islandora-print';
   }
-}
-
-/**
- * Form builder function for sort order form on basic collections.
- */
-function cwrc_islandora_tweaks_sort_form($form, &$form_state) {
-  return array(
-    'sort' => array(
-      '#type' => 'select',
-      '#title' => t('Sort by'),
-      '#options' => array(
-        'title' => t('Title'),
-        'date_modified' => t('Modified'),
-      ),
-      '#default_value' => (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT]) ? $_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] : 'title'),
-    ),
-    'submit' => array(
-      '#type' => 'submit',
-      '#value' => t('Change'),
-    ),
-  );
-}
-
-/**
- * Submit handler for sort order forms, simply performs a redirect to the same
- * page with the appropriate sort parameter.
- */
-function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
-  $path = current_path();
-  $query = drupal_get_query_parameters();
-  $query['sort'] = $form_state['values']['sort'];
-  drupal_goto($path, array('query' => $query));
 }
 
 /**
@@ -133,22 +230,6 @@ function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
  */
 function cwrc_islandora_tweaks_preprocess_islandora_basic_collection_grid(&$variables) {
   cwrc_islandora_tweaks_preprocess_islandora_basic_collection($variables);
-}
-
-/**
- * Implements hook_islandora_basic_collection_query_param_alter().
- */
-function cwrc_islandora_tweaks_islandora_basic_collection_query_param_alter(&$query_filters, &$query_statements, &$params, &$query_optionals) {
-  // Parse the URL to see if there is a sort parameter. Default to sorting by
-  // title if the value of the parameter is not something else we recognize.
-  if (isset($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT])) {
-    if ($_GET[CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT] === 'date_modified') {
-      $params['order_by'] = '?date_modified';
-    }
-    else {
-      $params['order_by'] = '?title';
-    }
-  }
 }
 
 /* Helper functions. */
@@ -219,36 +300,22 @@ function _cwrc_islandora_tweaks_parse_query($uri) {
 }
 
 /**
- * Implements hook_page_alter().
+ * A helper function to determine if a message has already been queued.
+ *
+ * @param string $msg
+ *   The message to check.
+ *
+ * @return bool
+ *   TRUE if the message has been queued for display; FALSE otherwise.
  */
-function cwrc_islandora_tweaks_page_alter(&$page) {
-  module_load_include('inc', 'islandora_object_lock', 'includes/utilities');
-
-  $object = menu_get_object('islandora_object', 2);
-  if (!$object) {
-    return;
-  }
-
-  if (arg(3) != "manage") return;
-
-  if (!islandora_object_lock_is_locked($object)) return;
-
-  $msg = islandora_object_lock_get_locked_message($object);
-
-  if (!_cwrc_islandora_tweaks_message_exists($msg)) {
-    drupal_set_message($msg, 'warning', FALSE);
-  }
-
-}
-
 function _cwrc_islandora_tweaks_message_exists($msg) {
   $messages = drupal_get_messages(NULL, FALSE);
   foreach ($messages as $type => $msgs) {
     if (in_array($msg, $msgs)) {
-      return true;
+      return TRUE;
     }
   }
-  return false;
+  return FALSE;
 }
 
 /**
@@ -269,6 +336,7 @@ function cwrc_islandora_tweaks_islandora_object_ingested(AbstractObject $object)
       case 'islandora:sp-audioCModel':
         $default_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_audio') . '/images/audio-TN.jpg';
         break;
+
       case 'islandora:collectionCModel':
         $default_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'islandora_basic_collection') . '/images/folder.png';
         break;
@@ -286,46 +354,16 @@ function cwrc_islandora_tweaks_islandora_object_ingested(AbstractObject $object)
 }
 
 /**
- * The cmodel-specific implementations are fired last, so we need to implement
- * the same hook to block the default TN datastream here.
- */
-function cwrc_islandora_tweaks_islandora_collectioncmodel_islandora_object_ingested(AbstractObject $object) {
-  cwrc_islandora_tweaks_islandora_object_ingested($object);
-}
-
-/**
- * The cmodel-specific implementations are fired last, so we need to implement
- * the same hook to block the default TN datastream here.
- */
-function cwrc_islandora_tweaks_islandora_sp_audiocmodel_islandora_object_ingested(AbstractObject $object) {
-  cwrc_islandora_tweaks_islandora_object_ingested($object);
-}
-
-
-/**
- * Implements hook_module_implements_alter().
- *
- * Moves our implementations to the end of the run-list.
- */
-function cwrc_islandora_tweaks_module_implements_alter(&$implementations, $hook) {
-  static $hooks = array(
-    'islandora_collectionCModel_islandora_object_ingested',
-    'islandora_ap_audioCModel_islandora_object_ingested',
-  );
-  if (in_array($hook, $hooks)) {
-    $group = $implementations['cwrc_islandora_tweaks'];
-    unset($implementations['cwrc_islandora_tweaks']);
-    $implementations['cwrc_islandora_tweaks'] = $group;
-  }
-}
-
-/**
  * Helper function that extracts a single valid cmodel from a passed array.
  *
  * Primarily used to filter out `fedora-system` namespace cmodels (because we
  * just don't care about those ones).
- * @param  array $models An array of cmodel PIDs.
- * @return A single cmodel PID.
+ *
+ * @param array $models
+ *   An array of cmodel PIDs.
+ *
+ * @return string
+ *   A single cmodel PID.
  */
 function _cwrc_islandora_tweaks_extract_cmodel($models) {
   foreach ($models as $key => $value) {
