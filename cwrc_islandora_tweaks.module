@@ -131,6 +131,34 @@ function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
   drupal_goto($path, array('query' => $query));
 }
 
+/**
+ * Implements hook_form_alter().
+ */
+function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == "islandora_bookmark_detailed_form") {
+    $form['bookmarks']['users']['listusers']['#chosen'] = TRUE;
+    foreach ($form['bookmarks']['users']['listusers']['#options'] as $uid => $value) {
+      if (empty($uid)) {
+        continue;
+      }
+      if ($uid > 0) {
+        $user = user_load($uid);
+        if ($user) {
+          $realname = $user->realname;
+          if (empty($realname)) {
+            $realname = $user->name;
+          }
+          $form['bookmarks']['users']['listusers']['#options'][$uid] = $realname;
+        }
+      }
+    }
+
+    $form['bookmarks']['users']['listusers']['#options'][0] = t('Everyone');
+  }
+
+  return $form;
+}
+
 /* Theme functions. */
 
 /**
