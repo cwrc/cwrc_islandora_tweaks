@@ -17,6 +17,18 @@ define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
 
 /* Hooks. */
 
+function cwrc_islandora_tweaks_menu() {
+  return array(
+    'islandora/basic_collection/find_collections_user' => array(
+      'title' => 'Autocomplete Collection Search for Users',
+      'page callback' => 'cwrc_islandora_tweaks_get_collections_filtered',
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/utilities.inc',
+      'access arguments' => array(ISLANDORA_BASIC_COLLECTION_MIGRATE_COLLECTION_MEMBERS),
+    ),
+  );
+}
+
 /**
  * Implements hook_islandora_basic_collection_query_param_alter().
  */
@@ -393,4 +405,10 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   // This definitely isn't bullet-proof.
   $return = reset($models);
   return $return;
+}
+
+function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'islandora_basic_collection_migrate_item_form' || 'islandora_basic_collection_migrate_item_form' ) {
+    $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
+  }
 }
