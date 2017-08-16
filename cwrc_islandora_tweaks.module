@@ -394,3 +394,11 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   $return = reset($models);
   return $return;
 }
+
+function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'islandora_basic_collection_share_children_form' || $form_id == 'islandora_basic_collection_migrate_children_form') {
+    $form['collection']['#required'] = 1;
+    $form['collection']['#empty_option'] = '- '. t('Choose a Collection') . ' -';
+  }
+}
