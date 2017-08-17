@@ -394,3 +394,19 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   $return = reset($models);
   return $return;
 }
+
+function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+
+  if ($form_id == 'islandora_ingest_form') {
+    global $base_url;
+    $path_info = explode('/', current_path());
+    $path = '/' . $path_info[0] . '/' . $path_info[1] . '/' . $path_info[2] . '/';
+
+    $form['cancel'] = array(
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#weight' => 19,
+      '#attributes' => array('onClick' => 'window.location= "' . $base_url . $path . '"; event.preventDefault();'),
+    );
+  }
+}
