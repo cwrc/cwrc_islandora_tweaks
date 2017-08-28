@@ -17,6 +17,18 @@ define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
 
 /* Hooks. */
 
+function cwrc_islandora_tweaks_menu() {
+  return array(
+    'islandora/basic_collection/find_collections_user' => array(
+      'title' => 'Autocomplete Collection Search for Users',
+      'page callback' => 'cwrc_islandora_tweaks_get_collections_filtered',
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/utilities.inc',
+      'access arguments' => array(ISLANDORA_BASIC_COLLECTION_MIGRATE_COLLECTION_MEMBERS),
+    ),
+  );
+}
+
 /**
  * Implements hook_islandora_basic_collection_query_param_alter().
  */
@@ -408,5 +420,19 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
       '#weight' => 19,
       '#attributes' => array('onClick' => 'window.location= "' . $base_url . $path . '"; event.preventDefault();'),
     );
+  }
+  if ($form_id == 'islandora_basic_collection_select_content_model_form') {
+    $form['models']['#title'] = t('Select the type of item (Content Model) to add');
+    asort($form['models']['#options']);
+    foreach ($form['models']['#options'] as $key => &$value) {
+      $value = str_replace(array('CModel', 'Content Model'), '', $value);
+    }
+  }
+  if ($form_id == 'islandora_basic_collection_share_children_form' || $form_id == 'islandora_basic_collection_migrate_children_form') {
+    $form['collection']['#required'] = 1;
+    $form['collection']['#empty_option'] = '- '. t('Choose a Collection') . ' -';
+  }
+  if ($form_id == 'islandora_basic_collection_migrate_item_form' || 'islandora_basic_collection_migrate_item_form' ) {
+    $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
   }
 }
