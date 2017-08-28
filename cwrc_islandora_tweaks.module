@@ -416,4 +416,8 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
       $value = str_replace(array('CModel', 'Content Model'), '', $value);
     }
   }
+  if ($form_id == 'islandora_basic_collection_share_children_form' || $form_id == 'islandora_basic_collection_migrate_children_form') {
+    $form['collection']['#required'] = 1;
+    $form['collection']['#empty_option'] = '- '. t('Choose a Collection') . ' -';
+  }
 }
