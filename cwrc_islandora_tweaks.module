@@ -200,14 +200,6 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   return $form;
 }
 
-/**
- *
- */
-
-cwrc_islandora_tweaks_bookmark_form_alter(&$form, &$form_state, $form_id) {
-
-}
-
 /* Theme functions. */
 
 /**
