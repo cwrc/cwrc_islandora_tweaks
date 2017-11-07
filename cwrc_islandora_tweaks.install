@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_update_7000().
+ *
+ * Turns on object locking lift on modify behaviour.
+ */
+function cwrc_islandora_tweaks_update_7000(&$sandbox = NULL) {
+  variable_set('islandora_object_lock_lift_lock_on_modify', TRUE);
+}
