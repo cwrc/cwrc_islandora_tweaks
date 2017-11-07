@@ -451,3 +451,13 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   return $return;
 }
 
+
+function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'islandora_basic_collection_select_content_model_form') {
+    $form['models']['#title'] = t('Select the type of item (Content Model) to add');
+    asort($form['models']['#options']);
+    foreach ($form['models']['#options'] as $key => &$value) {
+      $value = str_replace(array('CModel', 'Content Model'), '', $value);
+    }
+  }
+}
