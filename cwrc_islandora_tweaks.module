@@ -453,6 +453,9 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
 
 
 function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'islandora_basic_collection_migrate_item_form' || 'islandora_basic_collection_migrate_item_form' ) {
+    $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
+  }
   if ($form_id == 'islandora_basic_collection_select_content_model_form') {
     $form['models']['#title'] = t('Select the type of item (Content Model) to add');
     asort($form['models']['#options']);
