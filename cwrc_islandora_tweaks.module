@@ -144,9 +144,53 @@ function cwrc_islandora_tweaks_sort_form_submit($form, &$form_state) {
 }
 
 /**
+ * Implements hook__islandora_object_lock_ignored_datastream_modifications().
+ *
+ * Blocks the CWRC datastream from unlocking an object.
+ */
+function cwrc_islandora_tweaks_islandora_object_lock_ignored_datastream_modifications(AbstractDatastream $datastream) {
+  return array(
+    'CWRC',
+  );
+}
+
+/**
  * Implements hook_form_alter().
  */
 function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+
+  /* Break this into its own function */
+  if ($form_id == 'islandora_ingest_form') {
+    global $base_url;
+    $path_info = explode('/', current_path());
+    $path = '/' . $path_info[0] . '/' . $path_info[1] . '/' . $path_info[2] . '/';
+
+    $form['cancel'] = array(
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#weight' => 19,
+      '#attributes' => array('onClick' => 'window.location= "' . $base_url . $path . '"; event.preventDefault();'),
+    );
+  }
+
+  /* Break these next 3 ifs into its own function */
+  if ($form_id == 'islandora_basic_collection_select_content_model_form') {
+    $form['models']['#title'] = t('Select the type of item (Content Model) to add');
+    asort($form['models']['#options']);
+    foreach ($form['models']['#options'] as $key => &$value) {
+      $value = str_replace(array('CModel', 'Content Model'), '', $value);
+    }
+  }
+  if ($form_id == 'islandora_basic_collection_share_children_form' || $form_id == 'islandora_basic_collection_migrate_children_form') {
+    $form['collection']['#required'] = 1;
+    $form['collection']['#empty_option'] = '- '. t('Choose a Collection') . ' -';
+  }
+  if ($form_id == 'islandora_basic_collection_migrate_item_form' || 'islandora_basic_collection_migrate_item_form' ) {
+    $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
+  }
+
+
+  /* Break this into its own function */
   if ($form_id == "islandora_bookmark_detailed_form") {
     $form['bookmarks']['users']['listusers']['#chosen'] = TRUE;
     foreach ($form['bookmarks']['users']['listusers']['#options'] as $uid => $value) {
@@ -407,8 +451,16 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   return $return;
 }
 
+
 function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'islandora_basic_collection_migrate_item_form' || 'islandora_basic_collection_migrate_item_form' ) {
     $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
+  }
+  if ($form_id == 'islandora_basic_collection_select_content_model_form') {
+    $form['models']['#title'] = t('Select the type of item (Content Model) to add');
+    asort($form['models']['#options']);
+    foreach ($form['models']['#options'] as $key => &$value) {
+      $value = str_replace(array('CModel', 'Content Model'), '', $value);
+    }
   }
 }
