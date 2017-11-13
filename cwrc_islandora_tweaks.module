@@ -53,6 +53,7 @@ function cwrc_islandora_tweaks_module_implements_alter(&$implementations, $hook)
   static $hooks = array(
     'islandora_collectionCModel_islandora_object_ingested',
     'islandora_ap_audioCModel_islandora_object_ingested',
+    'form_islandora_basic_collection_create_child_collection_form_alter',
   );
   if (in_array($hook, $hooks)) {
     $group = $implementations['cwrc_islandora_tweaks'];
@@ -213,6 +214,25 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   }
 
   return $form;
+}
+
+/**
+ * Implements hook_form_islandora_basic_collection_create_child_collection_form_alter().
+ */
+function cwrc_islandora_tweaks_form_islandora_basic_collection_create_child_collection_form_alter(&$form, &$form_state) {
+  $label = $form_state['build_info']['args'][0]['collection']->label;
+  drupal_set_title('Creating a collection within "' . $label . '"');
+  $form['pid']['#title'] = t('Permanent Identifier (PID) for the new Collection: (optional)');
+  $form['pid']['#description'] = t('<p>A PID is a namespace plus a unique identifier, formatted as "namespace:collectionIdentifier".</p>
+<p>The namespace prefix identifies a project and/or collection (e.g. cwrc).</p>
+<p>The namespace is inherited by all the descendants of the collection. Do not change the namespace within a PID unless you are working on a project with an established one (e.g. digitalpage:), which is usually a multisite project. If your project has a custom namespace, collections should inherit them.</p>
+<p>(The current namespace is visible in the address bar of your browser, which will show ...islandora/object/namespace%3AcollectionIdentifier/manage/overview/ingest)</p>
+<p>You may provide your own (human-readable) unique identifier for a collection. For example: "cwrc:AtlanticPoetry" or "digitalpage:brazilian".</p>
+<p>Do not use spaces or special characters.</p>');
+
+  $form['xacml']['#description'] = t('<p>Collection policies govern the types of content a collection can contain and who can see and modify a collection.</p>
+<p>The default policy permits public viewing but restricts modification to those with editing rights for the project. If you have set different policies for the parent collection, you can choose to have this sub-collection inherit those policies.</p>
+<p>If in doubt, leave settings as they are.</p>');
 }
 
 /* Theme functions. */
