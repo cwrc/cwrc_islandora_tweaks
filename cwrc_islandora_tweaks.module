@@ -520,8 +520,8 @@ function cwrc_islandora_tweaks_form_islandora_basic_collection_share_item_form_a
   $form['additional_permissions']['manage_permissions']['group'] = $group_widget;
 
   // Get a list of users.
-  $uids = db_query('SELECT u.uid, u.name FROM users u WHERE u.status = 1')->fetchAllAssoc('uid');
-  $user_options = realname_load_multiple($uids);
+  $user_options = drupal_map_assoc(array_keys(db_query('SELECT u.name FROM users u WHERE u.status = 1')->fetchAllAssoc('name')));
+  _cwrc_xacml_replace_usernames($user_options);
 
   // Create user widget.
   $user_widget = array(
@@ -558,43 +558,62 @@ function cwrc_islandora_tweaks_form_islandora_basic_collection_share_item_form_a
 function cwrc_islandora_tweaks_share_form_submit($form, &$form_state) {
   // Get object and form values.
   $object = $form_state['build_info']['args'][0];
+  $xacml = new IslandoraXacml($object);
   $values = $form_state['values'];
 
   // If the update permissions checkbox is checked get destination XACML.
   if ($values['update_permissions'] == 1) {
+    // Load desination collection and XACML rules.
     $destination = islandora_object_load($values['new_collection_name']);
-    // TODO: Sync permissions from destination onto this object.
+    $xacml_destination = new IslandoraXacml($destination);
+
+    // Apply all destination rules to this object.
+    foreach ($xacml_destination->viewingRule->getUsers() as $user) {
+      $xacml->viewingRule->addUser($user);
+    }
+    foreach ($xacml_destination->viewingRule->getRoles() as $role) {
+      $xacml->viewingRule->addRole($role);
+    }
+    foreach ($xacml_destination->managementRule->getUsers() as $user) {
+      $xacml->managementRule->addUser($user);
+    }
+    foreach ($xacml_destination->managementRule->getRoles() as $role) {
+      $xacml->managementRule->addRole($role);
+    }
   }
 
   // Merge group and role permissions (OG global roles will take over).
-  $view_uids = $values['additional_permissions']['view_permissions']['user'];
+  $view_users = $values['additional_permissions']['view_permissions']['user'];
   $view_roles = array_merge(
     $values['additional_permissions']['view_permissions']['group'],
     $values['additional_permissions']['view_permissions']['role']
   );
-  $manage_uids = $values['additional_permissions']['manage_permissions']['user'];
+  $manage_users = $values['additional_permissions']['manage_permissions']['user'];
   $manage_roles = array_merge(
     $values['additional_permissions']['manage_permissions']['group'],
     $values['additional_permissions']['manage_permissions']['role']
   );
 
   // Grant view permissions to users.
-  foreach ($view_uids as $uid) {
-    // TODO: Grant view permission to this user.
+  foreach ($view_users as $user) {
+    $xacml->viewingRule->addUser($user);
   }
 
   // Grant view permission to roles.
   foreach ($view_roles as $role) {
-    // TODO: Grant view permission to role.
+    $xacml->viewingRule->addRole($role);
   }
 
   // Grant manage permissions to users.
-  foreach ($manage_uids as $uid) {
-    // TODO: Grant manage permission to this user.
+  foreach ($manage_users as $user) {
+    $xacml->managementRule->addUser($user);
   }
 
   // Grant manage permission to roles.
   foreach ($manage_roles as $role) {
-    // TODO: Grant manage permission to role.
+    $xacml->managementRule->addRole($role);
   }
+
+  // Write XACML back to fedora.
+  $xacml->writeBackToFedora();
 }
