@@ -470,3 +470,131 @@ function _cwrc_islandora_tweaks_extract_cmodel($models) {
   $return = reset($models);
   return $return;
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter() for islandora_basic_collection_share_item_form().
+ */
+function cwrc_islandora_tweaks_form_islandora_basic_collection_share_item_form_alter(&$form, &$form_state, $form_id) {
+  // Push on a submit handler.
+  $form['#submit'][] = 'cwrc_islandora_tweaks_share_form_submit';
+
+  // Add the update permissions checkbox.
+  $form['update_permissions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Update permissions?'),
+    '#description' => t('Checking this box will attempt to merge the XACML permissions on this object with the XACML permissions at the destination.'),
+    '#default_value' => TRUE,
+  );
+
+  // Additional permissions fieldset, will fill momentarily.
+  $form['additional_permissions'] = array(
+    '#tree' => TRUE,
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Additional Permissions'),
+    '#description' => t('Here you can apply additional permissions to your object, note that permissions may only be <strong>GRANTED</strong> from this form, please use the XACML editor for more options.'),
+    'view_permissions' => array(
+      '#type' => 'fieldset',
+      '#title' => t('View permissions'),
+    ),
+    'manage_permissions' => array(
+      '#type' => 'fieldset',
+      '#title' => t('Manage permissions'),
+    ),
+  );
+
+  // Get group options available to this user.
+  $group_options = _cwrc_xacml_get_group_options();
+
+  // Create group widget.
+  $group_widget = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#chosen' => TRUE,
+    '#options' => $group_options,
+    '#title' => t('Group access'),
+  );
+
+  $form['additional_permissions']['view_permissions']['group'] = $group_widget;
+  $form['additional_permissions']['manage_permissions']['group'] = $group_widget;
+
+  // Get a list of users.
+  $uids = db_query('SELECT u.uid, u.name FROM users u WHERE u.status = 1')->fetchAllAssoc('uid');
+  $user_options = realname_load_multiple($uids);
+
+  // Create user widget.
+  $user_widget = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#chosen' => TRUE,
+    '#options' => $user_options,
+    '#title' => t('User access'),
+  );
+
+  $form['additional_permissions']['view_permissions']['user'] = $user_widget;
+  $form['additional_permissions']['manage_permissions']['user'] = $user_widget;
+
+  // Get a list of roles.
+  $role_options = drupal_map_assoc(array_keys(db_query('SELECT r.name FROM role r')->fetchAllAssoc('name')));
+  _og_global_roles_filter_select($role_options);
+
+  // Create role widget.
+  $role_widget = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#chosen' => TRUE,
+    '#options' => $role_options,
+    '#title' => t('Role access'),
+  );
+
+  $form['additional_permissions']['view_permissions']['role'] = $role_widget;
+  $form['additional_permissions']['manage_permissions']['role'] = $role_widget;
+}
+
+/**
+ * Submit handler for share form.
+ */
+function cwrc_islandora_tweaks_share_form_submit($form, &$form_state) {
+  // Get object and form values.
+  $object = $form_state['build_info']['args'][0];
+  $values = $form_state['values'];
+
+  // If the update permissions checkbox is checked get destination XACML.
+  if ($values['update_permissions'] == 1) {
+    $destination = islandora_object_load($values['new_collection_name']);
+    // TODO: Sync permissions from destination onto this object.
+  }
+
+  // Merge group and role permissions (OG global roles will take over).
+  $view_uids = $values['additional_permissions']['view_permissions']['user'];
+  $view_roles = array_merge(
+    $values['additional_permissions']['view_permissions']['group'],
+    $values['additional_permissions']['view_permissions']['role']
+  );
+  $manage_uids = $values['additional_permissions']['manage_permissions']['user'];
+  $manage_roles = array_merge(
+    $values['additional_permissions']['manage_permissions']['group'],
+    $values['additional_permissions']['manage_permissions']['role']
+  );
+
+  // Grant view permissions to users.
+  foreach ($view_uids as $uid) {
+    // TODO: Grant view permission to this user.
+  }
+
+  // Grant view permission to roles.
+  foreach ($view_roles as $role) {
+    // TODO: Grant view permission to role.
+  }
+
+  // Grant manage permissions to users.
+  foreach ($manage_uids as $uid) {
+    // TODO: Grant manage permission to this user.
+  }
+
+  // Grant manage permission to roles.
+  foreach ($manage_roles as $role) {
+    // TODO: Grant manage permission to role.
+  }
+}
