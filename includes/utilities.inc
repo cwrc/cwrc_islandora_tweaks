@@ -8,6 +8,7 @@
  */
 function cwrc_islandora_tweaks_get_collections_filtered($search_value) {
   global $user;
+  module_load_include('inc', 'islandora_basic_collection', 'includes/utilities');
   $tuque = islandora_get_tuque_connection($user);
   $sparql_query = <<<EOQ
 SELECT ?pid ?label
