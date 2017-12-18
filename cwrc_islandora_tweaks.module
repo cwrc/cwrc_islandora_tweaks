@@ -179,6 +179,11 @@ function cwrc_islandora_tweaks_islandora_object_lock_ignored_datastream_modifica
  * Implements hook_form_alter().
  */
 function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'islandora_workflow_rest_cwrc_workflow_management_form') {
+    foreach ($form['logged_events']['#options'] as &$option) {
+      $option['object'] = str_replace('/workflow', '/view/history', $option['object']);
+    }
+  }
 
   /* Break this into its own function */
   if ($form_id == 'islandora_ingest_form') {
