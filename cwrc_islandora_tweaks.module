@@ -17,16 +17,36 @@ define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
 
 /* Hooks. */
 
+/**
+ * Implements hook_menu().
+ */
 function cwrc_islandora_tweaks_menu() {
-  return array(
-    'islandora/basic_collection/find_collections_user' => array(
-      'title' => 'Autocomplete Collection Search for Users',
-      'page callback' => 'cwrc_islandora_tweaks_get_collections_filtered',
-      'type' => MENU_CALLBACK,
-      'file' => 'includes/utilities.inc',
-      'access arguments' => array(ISLANDORA_BASIC_COLLECTION_MIGRATE_COLLECTION_MEMBERS),
-    ),
+  $items = [];
+  $items['islandora/basic_collection/find_collections_user'] = array(
+    'title' => 'Autocomplete Collection Search for Users',
+    'page callback' => 'cwrc_islandora_tweaks_get_collections_filtered',
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/utilities.inc',
+    'access arguments' => array(ISLANDORA_BASIC_COLLECTION_MIGRATE_COLLECTION_MEMBERS),
   );
+  $items['islandora/object/%islandora_object/share/user'] = array(
+    'title' => 'Share with another user',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cwrc_islandora_tweaks_user_share', 2),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => 'islandora_object_manage_access_callback',
+    'access arguments' => array(
+      array(
+        ISLANDORA_MANAGE_PROPERTIES,
+        ISLANDORA_METADATA_EDIT,
+        ISLANDORA_ADD_DS,
+        ISLANDORA_PURGE,
+        ISLANDORA_INGEST,
+      ), 2,
+    ),
+    'weight' => 4,
+  );
+  return $items;
 }
 
 /**
@@ -616,4 +636,54 @@ function cwrc_islandora_tweaks_share_form_submit($form, &$form_state) {
 
   // Write XACML back to fedora.
   $xacml->writeBackToFedora();
+}
+
+/**
+ * Form builder callback for sharing object with a user.
+ */
+function cwrc_islandora_tweaks_user_share($form, &$form_state, $object) {
+  $form = array();
+  $form['user'] = array(
+    '#autocomplete_path' => 'user/autocomplete',
+    '#type' => 'textfield',
+    '#title' => t('User'),
+    '#description' => t('The user to share the object with.'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Share'),
+  );
+  return $form;
+}
+
+/**
+ * Form validation callback.
+ */
+function cwrc_islandora_tweaks_user_share_validate($form, &$form_state) {
+  if (FALSE == user_load_by_name($form_state['values']['user'])) {
+    form_set_error('user', t('Username invalid or not found.'));
+  }
+}
+
+/**
+ * Form submit handler.
+ */
+function cwrc_islandora_tweaks_user_share_submit($form, &$form_state) {
+  global $user;
+
+  // Get object and add XACML rule.
+  $object = $form_state['build_info']['args'][0];
+  $xacml = new IslandoraXacml($object);
+  $xacml->viewingRule->addUser($form_state['values']['user']);
+  $xacml->writeBackToFedora();
+
+  // Send user a PM with details.
+  $recipient = user_load_by_name($form_state['values']['user']);
+  privatemsg_new_thread(
+    array($recipient),
+    t('@author shared "@object" with you!', array('@author' => realname_load($user), '@object' => $object->label)),
+    t('You can view the object by <a href="@link">clicking here</a>.', array('@link' => url('islandora/object/' . $object->id)))
+  );
+
+  drupal_set_message(t('"@object" shared with @recipient.', array('@object' => $object->label, '@recipient' => realname_load($recipient))));
 }
