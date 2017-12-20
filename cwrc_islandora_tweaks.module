@@ -215,6 +215,17 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
     $form['new_collection_name']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
   }
 
+  if ($form_id == 'xml_form_builder_datastream_form') {
+    list($object, $dsid) = $form_state['build_info']['args'];
+    if ($dsid == 'MODS') {
+      $form['cancel'] = array(
+        '#type' => 'button',
+        '#value' => t('Cancel'),
+        '#submit' => array('cwrc_islandora_tweaks_mods_cancel'),
+        '#executes_submit_callback' => TRUE,
+      );
+    }
+  }
 
   /* Break this into its own function */
   if ($form_id == "islandora_bookmark_detailed_form") {
@@ -239,6 +250,16 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   }
 
   return $form;
+}
+
+/**
+ * Form cancellation submit handler.
+ */
+function cwrc_islandora_tweaks_mods_cancel($form, &$form_state) {
+  list($object, $dsid) = $form_state['build_info']['args'];
+  $form_state['redirect'] = 'islandora/object/' . $object->id;
+  islandora_object_lock_remove_object_lock($object->id);
+  drupal_set_message(t('Lock removed, datastream "@dsid" was not modified.', array('@dsid' => $dsid)));
 }
 
 /**
