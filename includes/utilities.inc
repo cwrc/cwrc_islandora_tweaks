@@ -32,7 +32,7 @@ EOQ;
     }
     $access = islandora_xacml_editor_islandora_object_access('administer islandora_xacml_editor',$object, $user);
 
-    $return[$objects['pid']['value']] = t('@label (@pid)@parents', array(
+    $return[$objects['pid']['value']] = t('@label @parents [@pid]', array(
       '@label' => $objects['label']['value'],
       '@pid' => $objects['pid']['value'],
       '@parents' =>  $parents_label,
