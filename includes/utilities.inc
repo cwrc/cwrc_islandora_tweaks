@@ -25,17 +25,17 @@ EOQ;
 
     $object = islandora_object_load($objects['pid']['value']);
     $parents = islandora_basic_collection_get_parent_pids($object);
-    $parents_label = '';
+    $parent_labels = array();
     foreach ($parents as $parent) {
       $parent_object = islandora_object_load($parent);
-      $parents_label .= ' (' . $parent_object->label .')';
+      $parent_labels[] = $parent_object->label;
     }
     $access = islandora_xacml_editor_islandora_object_access('administer islandora_xacml_editor',$object, $user);
 
-    $return[$objects['pid']['value']] = t('@label @parents [@pid]', array(
+    $return[$objects['pid']['value']] = t('@label [@parents] (@pid)', array(
       '@label' => $objects['label']['value'],
+      '@parents' =>  implode(', ', $parent_labels),
       '@pid' => $objects['pid']['value'],
-      '@parents' =>  $parents_label,
     ));
 
     $object = islandora_object_load($objects['pid']['value']);
