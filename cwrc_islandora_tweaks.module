@@ -737,3 +737,27 @@ function cwrc_islandora_tweaks_user_share_submit($form, &$form_state) {
 
   drupal_set_message(t('"@object" shared with @recipient.', array('@object' => $object->label, '@recipient' => realname_load($recipient))));
 }
+
+/**
+ * Implements hook_block_list_alter().
+ *
+ * Remove the "saved searches" block on xquery searches.
+ */
+function cwrc_islandora_tweaks_block_list_alter(&$blocks) {
+  $page = current_path();
+  $query = drupal_get_query_parameters();
+
+  // Check if this is a search using xquery.
+  if ($page == 'islandora/search'
+    && isset($query['display'])
+    && $query['display'] == 'xquery') {
+
+    // Look for correct block to remove.
+    foreach ($blocks as $bid => $block) {
+      if ($block->module == 'islandora_saved_searches'
+        && $block->delta == 'save_search') {
+        unset($blocks[$bid]);
+      }
+    }
+  }
+}
