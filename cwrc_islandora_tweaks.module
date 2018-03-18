@@ -245,6 +245,7 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'button',
         '#value' => t('Cancel'),
         '#submit' => array('cwrc_islandora_tweaks_mods_cancel'),
+        '#limit_validation_errors' => array(),
         '#executes_submit_callback' => TRUE,
       );
     }
