@@ -750,7 +750,7 @@ function cwrc_islandora_tweaks_block_list_alter(&$blocks) {
   // Check if this is a search using xquery.
   if ($page == 'islandora/search'
     && isset($query['display'])
-    && $query['display'] == 'xquery') {
+    && $query['display'] == 'stamp') {
 
     // Look for correct block to remove.
     foreach ($blocks as $bid => $block) {
