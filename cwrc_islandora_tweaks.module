@@ -226,10 +226,10 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
       }
 
       // Change the option label to new format.
-      $form['collection']['#options'][$pid] = t('@label [@parents] (@pid)', array(
+      $form['collection']['#options'][$pid] = t('@label [@parents]', array(
         '@label' => $label,
         '@parents' =>  implode(', ', $parent_labels),
-        '@pid' => $pid,
+
       ));
     }
   }
