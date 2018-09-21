@@ -58,10 +58,22 @@ function cwrc_islandora_tweaks_menu() {
 
 
 function cwrc_islandora_tweaks_bcols() {
+	global $user;
+//	watchdog('userrrrr', '<pre>Dumping @variable </pre>', array('@variable' => print_r($user, true)));
+	module_load_include('inc','islandora_rest', 'includes/solr');
 	module_load_include('module','islandora_rest', 'islandora_rest');
 	$domain = "https://cwrc-dev-06.srv.ualberta.ca/islandora/rest/v1/";
-	$query = "solr/?q=*\.*";
-	islandora_rest_solr("*.*");
+
+	drupal_add_http_header('Content-Type', 'application/json; utf-8');
+	 return print drupal_json_encode(islandora_rest_solr_get_response(array(
+		'path' => array(
+			'query' => 'PID:"cwrc:organizationEntityCollection" OR PID:"cwrc:personEntityCollection" OR PID:"cwrc:placeEntityCollection"',
+			),
+		'request' => array(
+			'fl' => 'PID,fgs_label_s',
+		)
+	)))
+	;
 	
 }
 
