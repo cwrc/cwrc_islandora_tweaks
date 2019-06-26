@@ -210,8 +210,37 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'islandora_basic_collection_share_children_form'
     || $form_id == 'islandora_basic_collection_migrate_children_form') {
     $form['collection']['#required'] = 1;
-    $form['collection']['#type'] = 'textfield';
-    $form['collection']['#autocomplete_path'] = 'islandora/basic_collection/find_collections_user';
+    $form['collection']['#empty_option'] = '- '. t('Choose a Collection') . ' -';
+
+    /* This code adds the parent collection name to the label.
+     However on the live site, there was so many collections this became
+     a very expensive process.  So we're commenting it out.
+    */
+    /*
+    foreach ($form['collection']['#options'] as $pid => $label) {
+      // Load the object and get the parent pids.
+      $object = islandora_object_load($pid);
+      if(is_object($object )) {
+        $parent_pids = islandora_basic_collection_get_parent_pids($object);
+
+        // Build an array of parent labels.
+        $parent_labels = array();
+        foreach ($parent_pids as $parent_pid) {
+          $parent = islandora_object_load($parent_pid);
+          if(is_object($parent) ) {
+            $parent_labels[] = $parent->label;
+          }
+        }
+
+        // Change the option label to new format.
+        $form['collection']['#options'][$pid] = t('@label [@parents]', array(
+          '@label' => $label,
+          '@parents' =>  implode(', ', $parent_labels),
+
+        ));
+      }
+    }
+    */
   }
   if ($form_id == 'islandora_basic_collection_share_item_form'
     || $form_id == 'islandora_basic_collection_migrate_item_form') {
@@ -330,7 +359,10 @@ function cwrc_islandora_tweaks_preprocess_islandora_basic_collection(&$variables
       $content = array(
         '#theme' => 'cwrc_search_teaser_list',
         '#object' => $result['object']['value'],
+        '#not_collection' => FALSE,
       );
+      // We set not_collection to false - so later in...
+      // cwrc_search_preprocess_cwrc_search_teaser(), we do not show inherited labels.
       $build['#items'][] = render($content);
     }
   }
