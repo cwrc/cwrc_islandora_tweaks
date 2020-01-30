@@ -127,6 +127,17 @@ function cwrc_islandora_tweaks_islandora_sp_audiocmodel_islandora_object_ingeste
   cwrc_islandora_tweaks_islandora_object_ingested($object);
 }
 
+/**
+ * Implements hook_islandora_object_purged().
+ */
+function cwrc_islandora_tweaks_islandora_object_purged($pid) {
+  // Delete all menu module links that point to this object pid.
+  $result = db_query("SELECT mlid FROM {menu_links} WHERE link_path = :path AND module = 'menu'", array(':path' => 'islandora/object/' . $pid), array('fetch' => PDO::FETCH_ASSOC));
+  foreach ($result as $m) {
+    menu_link_delete($m['mlid']);
+  }
+}
+
 /* Form handlers. */
 
 /**
