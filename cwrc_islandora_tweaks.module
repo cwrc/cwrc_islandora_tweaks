@@ -21,6 +21,7 @@ define('CWRC_ISLANDORA_TWEAKS_SORT_FRAGMENT', 'sort');
  * Implements hook_menu().
  */
 function cwrc_islandora_tweaks_menu() {
+
   $items = [];
   $items['islandora/basic_collection/find_collections_user'] = array(
     'title' => 'Autocomplete Collection Search for Users',
@@ -29,7 +30,7 @@ function cwrc_islandora_tweaks_menu() {
     'file' => 'includes/utilities.inc',
     'access arguments' => array(ISLANDORA_BASIC_COLLECTION_MIGRATE_COLLECTION_MEMBERS),
   );
-  $items['islandora/object/%islandora_object/share/user'] = array(
+/*  $items['islandora/object/%islandora_object/share/user'] = array(
     'title' => 'Share with another user',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('cwrc_islandora_tweaks_user_share', 2),
@@ -45,6 +46,17 @@ function cwrc_islandora_tweaks_menu() {
       ), 2,
     ),
     'weight' => 4,
+  );*/
+  $items['islandora/object/%islandora_object/share/user'] = array(
+    'title' => 'Share with another user',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_xacml_editor_form', 2),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => 'islandora_xacml_editor_access',
+    'access arguments' => array(2),
+    'file' => 'includes/form.inc',
+    'file path' => drupal_get_path('module', 'islandora_xacml_editor'),
+    'weight' => 5,
   );
   return $items;
 }
@@ -783,4 +795,13 @@ function cwrc_islandora_tweaks_block_list_alter(&$blocks) {
       }
     }
   }
+}
+
+
+function cwrc_islandora_tweaks_xacml_form($form, &$form_state, $object) {
+  module_load_include('inc', 'islandora_xacml_editor', 'includes/form');
+  return drupal_get_form('islandora_xacml_editor_form');
+  
+  
+  
 }
