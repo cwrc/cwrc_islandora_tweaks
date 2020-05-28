@@ -212,6 +212,8 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'islandora_ingest_form') {
     global $base_url;
     $path_info = explode('/', current_path());
+//watchdog('cwrc tweaks bradmodule', '<pre>Dumping @variable </pre>', array('@variable' => print_r($path_info, true)));
+    if( $path_info[0] != 'system') {
     $path = '/' . $path_info[0] . '/' . $path_info[1] . '/' . $path_info[2] . '/';
 
     $form['cancel'] = array(
@@ -220,6 +222,7 @@ function cwrc_islandora_tweaks_form_alter(&$form, &$form_state, $form_id) {
       '#weight' => 19,
       '#attributes' => array('onClick' => 'window.location= "' . $base_url . $path . '"; event.preventDefault();'),
     );
+    }
   }
 
   /* Break these next 3 ifs into its own function */
